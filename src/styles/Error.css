@@ -1,0 +1,39 @@
+.error-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+  padding: 24px;
+}
+
+.error-page h1 {
+  font-family: var(--font-rect);
+  font-size: 6rem;
+  color: var(--terracota);
+  margin: 0;
+}
+
+.error-page p {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin: 8px 0 32px;
+}
+
+.error-page a {
+  color: var(--terracota);
+  text-decoration: none;
+  font-size: .9rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  border: 1px solid var(--terracota);
+  padding: 12px 32px;
+  border-radius: 2px;
+  transition: all .3s;
+}
+
+.error-page a:hover {
+  background: var(--terracota);
+  color: var(--white);
+}

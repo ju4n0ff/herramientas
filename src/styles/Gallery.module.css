@@ -1,0 +1,316 @@
+.gallery {
+  padding: 120px 0 80px;
+  overflow: hidden;
+}
+
+.header {
+  text-align: center;
+  padding: 0 48px;
+  margin-bottom: 64px;
+}
+
+.catTabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+  padding: 0 48px;
+}
+
+.tab {
+  padding: 8px 24px;
+  border-radius: 100px;
+  font-size: .78rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--sand);
+  color: var(--muted);
+  background: transparent;
+  transition: all .3s var(--ease);
+}
+
+.tab.active,
+.tab:hover {
+  background: var(--terracota);
+  border-color: var(--terracota);
+  color: var(--white);
+}
+
+/* Carousel */
+.carouselWrap { position: relative; }
+
+.track {
+  display: flex;
+  gap: 20px;
+  padding: 0 48px 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
+}
+
+.track::-webkit-scrollbar { display: none; }
+.track.grabbing { cursor: grabbing; }
+
+.slide {
+  flex: 0 0 calc(33.33% - 14px);
+  min-width: 280px;
+  scroll-snap-align: start;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  transition: transform .4s var(--ease), box-shadow .4s;
+}
+
+.slide:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 64px rgba(61, 43, 31, .18);
+}
+
+.slideImg {
+  height: 420px;
+  background: var(--beige);
+  position: relative;
+  overflow: hidden;
+}
+
+.slideImg img {
+  height: 100%;
+  transition: transform .6s var(--ease);
+}
+
+.slide:hover .slideImg img { transform: scale(1.06); }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(61, 43, 31, .7) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity .4s;
+  display: flex;
+  align-items: flex-end;
+  padding: 28px;
+}
+
+.slide:hover .overlay { opacity: 1; }
+
+.slideLabel {
+  color: var(--white);
+  font-family: var(--font-rect);
+  font-size: 1.3rem;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.caption {
+  padding: 16px 0 4px;
+  font-size: .8rem;
+  color: var(--muted);
+  letter-spacing: .06em;
+}
+
+/* Arrows */
+.btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-60%);
+  width: 48px;
+  height: 48px;
+  background: var(--white);
+  border: 1px solid var(--sand);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: var(--brown);
+  box-shadow: 0 4px 20px rgba(61, 43, 31, .1);
+  transition: all .3s;
+  z-index: 10;
+}
+
+.btn:hover {
+  background: var(--terracota);
+  color: var(--white);
+  border-color: var(--terracota);
+}
+
+.prev { left: 12px; }
+.next { right: 12px; }
+
+/* Dots */
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sand);
+  cursor: pointer;
+  border: none;
+  transition: all .3s;
+}
+
+.dot.active {
+  background: var(--terracota);
+  width: 24px;
+  border-radius: 3px;
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(18, 13, 8, .92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lbFade .25s var(--ease);
+}
+
+@keyframes lbFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lbClose {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.25);
+  background: transparent;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .3s;
+  z-index: 10;
+}
+
+.lbClose:hover {
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.5);
+}
+
+.lbArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.06);
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .3s;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+
+.lbArrow:hover {
+  background: rgba(255,255,255,.16);
+  border-color: rgba(255,255,255,.4);
+}
+
+.lbPrev { left: 20px; }
+.lbNext { right: 20px; }
+
+.lbImage {
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.lbImage img {
+  max-width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.5);
+  animation: lbZoom .3s var(--ease);
+}
+
+@keyframes lbZoom {
+  from { transform: scale(.92); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.lbInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255,255,255,.8);
+  font-size: .9rem;
+}
+
+.lbInfo span:first-child {
+  font-family: var(--font-rect);
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+.lbInfo span:last-child {
+  font-size: .78rem;
+  opacity: .6;
+}
+
+.lbCounter {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,.4);
+  font-size: .78rem;
+  letter-spacing: .08em;
+}
+
+@media (max-width: 900px) {
+  .header { padding: 0 24px; margin-bottom: 40px; }
+  .catTabs { padding: 0 24px; gap: 6px; }
+  .tab { font-size: .7rem; padding: 6px 16px; }
+  .track { padding: 0 24px 16px; gap: 12px; }
+  .slide { flex: 0 0 85%; min-width: 240px; }
+  .slideImg { height: 320px; }
+  .lbPrev { left: 8px; width: 40px; height: 40px; }
+  .lbNext { right: 8px; width: 40px; height: 40px; }
+  .lbClose { top: 12px; right: 12px; }
+}
+
+@media (max-width: 600px) {
+  .gallery { padding: 80px 0 60px; }
+  .header { padding: 0 16px; }
+  .catTabs { padding: 0 16px; }
+  .track { padding: 0 16px 12px; gap: 8px; }
+  .slide { flex: 0 0 90%; min-width: 200px; }
+  .slideImg { height: 240px; }
+  .slideLabel { font-size: 1rem; }
+  .caption { font-size: .72rem; }
+  .btn { width: 36px; height: 36px; font-size: .9rem; }
+  .prev { left: 4px; }
+  .next { right: 4px; }
+}
