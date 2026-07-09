@@ -54,7 +54,7 @@ async function fetchPacks() {
 
   const { data: packs, error: packsError } = await supabase
     .from('packs')
-    .select('id, badge, name, price, featured, desc')
+    .select('id, badge, name, price, featured, description')
     .order('sort_order')
 
   if (packsError) {
@@ -86,7 +86,7 @@ async function fetchPacks() {
     name: row.name,
     price: row.price,
     featured: row.featured,
-    desc: row.desc,
+    desc: row.description,
     items: itemsByPack[row.id] || [],
   }))
 }
@@ -215,11 +215,13 @@ export async function fetchAllData() {
 
   const wallWithStorage = fallback.PHOTO_WALL.map((p) => ({
     ...p,
-    src: `${STORAGE_URL}/mosaico/${normalizeFile(p.id)}.avif`,
+    src: `${STORAGE_URL}/mosaico/${p.id}.avif`,
   }))
 
   if (!STORAGE_URL) {
     console.warn('[dataService] Sin conexión a Supabase Storage. Las imágenes no cargarán.')
+    slidesWithStorage.forEach((s) => { s.src = '' })
+    wallWithStorage.forEach((p) => { p.src = '' })
   } else {
     console.warn('[dataService] Usando datos estáticos como fallback.')
   }

@@ -80,7 +80,7 @@ insert into public.slides (id, cat, label, caption, sort_order) values
 on conflict (id) do nothing;
 
 -- PACKS
-insert into public.packs (id, badge, name, price, featured, desc, sort_order) values
+insert into public.packs (id, badge, name, price, featured, description, sort_order) values
   (1, '🔥 Mas popular',     'Pack Urbano Pro',     'S/ 240',  true,  'Ideal para marca personal, parejas y contenido editorial en exteriores.', 1),
   (2, '🎉 Cobertura social', 'Eventos y Celebraciones', 'S/ 550',  false, 'Cobertura profesional para cumpleaños, bautizos y celebraciones privadas.', 2),
   (3, '💍 Wedding Story',   'Bodas Esencial',      'S/ 1400', false, 'Narrativa completa de boda civil o religiosa con enfoque documental.', 3),

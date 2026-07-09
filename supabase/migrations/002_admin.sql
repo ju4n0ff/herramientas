@@ -12,14 +12,14 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
--- Cada usuario solo ve/edita su propio perfil
-create policy "Usuarios ven su propio perfil"
-  on public.profiles for select
-  using (auth.uid() = id);
-
-create policy "Usuarios editan su propio perfil"
-  on public.profiles for update
-  using (auth.uid() = id);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename = 'profiles' and policyname = 'Usuarios ven su propio perfil') then
+    create policy "Usuarios ven su propio perfil" on public.profiles for select using (auth.uid() = id);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'profiles' and policyname = 'Usuarios editan su propio perfil') then
+    create policy "Usuarios editan su propio perfil" on public.profiles for update using (auth.uid() = id);
+  end if;
+end $$;
 
 -- Crear perfil automáticamente al registrarse
 create or replace function public.handle_new_user()
