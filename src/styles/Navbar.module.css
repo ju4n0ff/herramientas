@@ -61,6 +61,30 @@
 .links a:hover           { color: var(--terracota); }
 .links a:hover::after    { width: 100%; }
 
+.desktopActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.authLink {
+  font-size: .86rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 10px 14px;
+  border: 1px solid var(--sand);
+  border-radius: 2px;
+  transition: color .3s, border-color .3s;
+  text-decoration: none;
+}
+
+.authLink:hover {
+  color: var(--terracota);
+  border-color: var(--terracota);
+}
+
 .desktopCta {
   font-size: .86rem;
   letter-spacing: .12em;
@@ -166,7 +190,7 @@
     display: none;
   }
 
-  .desktopCta {
+  .desktopActions {
     display: none;
   }
 
@@ -234,6 +258,37 @@
   .nav.menuOpen .mobileCtaItem {
     display: block;
   }
+
+  .nav.menuOpen .mobileOnly {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .nav.menuOpen .mobileAuth {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 14px 24px;
+    font-size: .86rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--terracota);
+    border: 1px solid var(--terracota);
+    border-radius: 2px;
+    text-decoration: none;
+    transition: background .3s, color .3s;
+  }
+
+  .nav.menuOpen .mobileAuth:hover {
+    background: var(--terracota);
+    color: var(--white);
+  }
+}
+
+.mobileOnly {
+  display: none;
 }
 
 @media (max-width: 600px) {

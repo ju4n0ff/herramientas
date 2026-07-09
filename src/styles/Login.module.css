@@ -98,6 +98,28 @@
   cursor: not-allowed;
 }
 
+.recoveryBtn {
+  display: inline-block;
+  background: none;
+  border: none;
+  color: var(--terracota, #b5714a);
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+.recoveryBtn:hover {
+  text-decoration: underline;
+}
+
+.recoverySent {
+  text-align: center;
+  padding: 10px 0;
+  color: var(--brown, #3d2b1f);
+}
+
 .links {
   margin-top: 22px;
   font-size: 0.95rem;

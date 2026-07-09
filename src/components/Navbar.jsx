@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavScroll } from '../hooks/useNavScroll'
-import { STORAGE_URL } from '../services/supabaseClient'
+import { supabase, STORAGE_URL } from '../services/supabaseClient'
 import styles from '../styles/Navbar.module.css'
 
 const NAV_LINKS = [
@@ -13,7 +13,36 @@ const NAV_LINKS = [
 export default function Navbar({ onContact }) {
   const scrolled = useNavScroll()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [session, setSession] = useState(null)
+  const [profile, setProfile] = useState(null)
   const menuRef = useRef(null)
+
+  useEffect(() => {
+    let mounted = true
+
+    async function checkAuth() {
+      if (!supabase) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!mounted) return
+      setSession(session)
+
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle()
+
+        if (mounted) setProfile(profile)
+      }
+    }
+
+    checkAuth()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const closeMenu = useCallback(() => setMenuOpen(false), [])
 
@@ -75,11 +104,39 @@ export default function Navbar({ onContact }) {
             Reservar sesión
           </button>
         </li>
+        <li className={styles.mobileOnly}>
+          {session ? (
+            <a
+              href={profile?.role === 'admin' ? '/admin' : '/dashboard'}
+              className={styles.mobileAuth}
+            >
+              {profile?.role === 'admin' ? 'Panel admin' : 'Mi panel'}
+            </a>
+          ) : (
+            <a href="/admin/login" className={styles.mobileAuth}>
+              Iniciar sesión
+            </a>
+          )}
+        </li>
       </ul>
 
-      <button className={styles.desktopCta} onClick={onContact}>
-        Reservar sesión
-      </button>
+      <div className={styles.desktopActions}>
+        {session ? (
+          <a
+            href={profile?.role === 'admin' ? '/admin' : '/dashboard'}
+            className={styles.authLink}
+          >
+            {profile?.role === 'admin' ? 'Admin' : 'Mi panel'}
+          </a>
+        ) : (
+          <a href="/admin/login" className={styles.authLink}>
+            Iniciar sesión
+          </a>
+        )}
+        <button className={styles.desktopCta} onClick={onContact}>
+          Reservar sesión
+        </button>
+      </div>
     </nav>
   )
 }

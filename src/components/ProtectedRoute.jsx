@@ -2,16 +2,51 @@ import { useState, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
 
-export default function ProtectedRoute({ children }) {
+export function RequireAuth({ children }) {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function check() {
+      if (!supabase) {
+        setLoading(false)
+        return
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      setSession(session)
+      setLoading(false)
+    }
+
+    check()
+  }, [])
+
+  if (loading) return null
+
+  if (!supabase) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
+        <p>Supabase no está configurado.</p>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <Navigate to="/admin/login" replace />
+  }
+
+  return children
+}
+
+export default function RequireAdmin({ children }) {
   const [session, setSession] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function checkSession() {
+    async function check() {
       if (!supabase) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoading(false)
         return
       }
@@ -39,23 +74,10 @@ export default function ProtectedRoute({ children }) {
         setIsAdmin(profile?.role === 'admin')
       }
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false)
     }
 
-    checkSession()
-
-    if (!supabase) return
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (!session) setIsAdmin(false)
-      else checkSession()
-    })
-
-    return () => subscription?.unsubscribe()
+    check()
   }, [])
 
   if (loading) return null
@@ -64,7 +86,6 @@ export default function ProtectedRoute({ children }) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
         <p>Supabase no está configurado.</p>
-        <p>Crea un archivo <code>.env</code> basado en <code>.env.example</code>.</p>
       </div>
     )
   }
@@ -79,8 +100,8 @@ export default function ProtectedRoute({ children }) {
         <p>Tu cuenta no tiene permisos de administrador.</p>
         {error && <p>Error: {error}</p>}
         <p>
-          Pide a un admin que cambie tu rol desde el panel, o registra el primer usuario del
-          sistema para crear el admin inicial.
+          Pide a un admin que cambie tu rol desde el panel, o si eres el primer usuario del
+          sistema, puede que la migración deba ejecutarse aún.
         </p>
         <Link to="/">Volver al sitio</Link>
       </div>

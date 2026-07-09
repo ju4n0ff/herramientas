@@ -3,10 +3,12 @@ import Home from './pages/Home'
 import Error from './pages/Error'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import EditarPerfil from './pages/EditarPerfil'
 import Admin from './pages/Admin'
 import Cursor from './components/Cursor'
 import AccessibilityPanel from './components/AccessibilityPanel'
-import ProtectedRoute from './components/ProtectedRoute'
+import RequireAdmin, { RequireAuth } from './components/ProtectedRoute'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { Routes, Route, BrowserRouter } from 'react-router-dom'
@@ -58,11 +60,27 @@ export default function App() {
           <Route path="/registro" element={<Register />} />
           <Route path="/admin/register" element={<Register />} />
           <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <RequireAuth>
+                <EditarPerfil />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <Admin />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route path="/" element={<MainLayout />}>
