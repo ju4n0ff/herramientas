@@ -1,12 +1,26 @@
 import { supabase, STORAGE_URL } from './supabaseClient'
+import { CATS, CONTACT_INFO, PACKS, PHOTO_WALL, SLIDES } from '../data/index.js'
 
 const normalizeFile = (name) => name.replace(/ñ/g, 'n').replace(/Ñ/g, 'N')
 
+const storagePath = (path) => (STORAGE_URL ? `${STORAGE_URL}/${path}` : '')
+
 /* ── Static fallback ── */
 
-async function loadStaticFallback() {
-  const data = await import('../data/index.js')
-  return data
+export function getStaticData() {
+  return {
+    categories: CATS,
+    slides: SLIDES.map((slide) => ({
+      ...slide,
+      src: storagePath(`slides/${normalizeFile(slide.id)}.avif`),
+    })),
+    packs: PACKS,
+    contactInfo: CONTACT_INFO,
+    photoWall: PHOTO_WALL.map((photo) => ({
+      ...photo,
+      src: storagePath(`mosaico/${photo.id}.avif`),
+    })),
+  }
 }
 
 /* ── Fetch functions ── */
@@ -43,7 +57,7 @@ async function fetchSlides() {
   return data.map((row) => ({
     id: row.id,
     cat: row.cat,
-    src: `${STORAGE_URL}/slides/${normalizeFile(row.id)}.avif`,
+    src: storagePath(`slides/${normalizeFile(row.id)}.avif`),
     label: row.label,
     caption: row.caption,
   }))
@@ -122,7 +136,7 @@ async function fetchPhotoWall() {
 
   const withSrc = data.map((row) => ({
     id: row.id,
-    src: `${STORAGE_URL}/mosaico/${row.filename}`,
+    src: storagePath(`mosaico/${row.filename}`),
     alt: row.alt,
     orientation: row.orientation,
   }))
@@ -206,32 +220,16 @@ export async function fetchAllData() {
     return { categories, slides, packs, contactInfo, photoWall, source: 'supabase' }
   }
 
-  const fallback = await loadStaticFallback()
-
-  const slidesWithStorage = fallback.SLIDES.map((s) => ({
-    ...s,
-    src: `${STORAGE_URL}/slides/${normalizeFile(s.id)}.avif`,
-  }))
-
-  const wallWithStorage = fallback.PHOTO_WALL.map((p) => ({
-    ...p,
-    src: `${STORAGE_URL}/mosaico/${p.id}.avif`,
-  }))
+  const fallback = getStaticData()
 
   if (!STORAGE_URL) {
     console.warn('[dataService] Sin conexión a Supabase Storage. Las imágenes no cargarán.')
-    slidesWithStorage.forEach((s) => { s.src = '' })
-    wallWithStorage.forEach((p) => { p.src = '' })
   } else {
     console.warn('[dataService] Usando datos estáticos como fallback.')
   }
 
   return {
-    categories: fallback.CATS,
-    slides: slidesWithStorage,
-    packs: fallback.PACKS,
-    contactInfo: fallback.CONTACT_INFO,
-    photoWall: wallWithStorage,
+    ...fallback,
     source: 'fallback',
   }
 }

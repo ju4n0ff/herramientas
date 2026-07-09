@@ -44,7 +44,19 @@ export function useData() {
       .catch((err) => {
         if (!mounted) return
         console.error('[useData] Error al cargar datos:', err)
-        setState({ data: null, loading: false, error: err })
+        console.error('[useData] Stack:', err.stack)
+        sessionStorage.removeItem(CACHE_KEY)
+        setState({
+          data: {
+            categories: [{ key: 'all', label: 'Todos' }],
+            slides: [],
+            packs: [],
+            contactInfo: [],
+            photoWall: [],
+          },
+          loading: false,
+          error: err,
+        })
       })
 
     return () => {

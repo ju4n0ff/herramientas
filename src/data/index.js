@@ -168,4 +168,7 @@ export const PHOTO_WALL = [
   { id: 's01', orientation: 'square', alt: 'Mosaico s01' },
   { id: 's02', orientation: 'square', alt: 'Mosaico s02' },
   { id: 's03', orientation: 'square', alt: 'Mosaico s03' },
-]
+].map((photo, index) => ({
+  ...photo,
+  tilt: WALL_TILTS[index % WALL_TILTS.length],
+}))
