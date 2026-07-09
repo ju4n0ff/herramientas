@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import Home from './pages/Home'
 import Error from './pages/Error'
 import Login from './pages/Login'
+import Register from './pages/Register'
 import Admin from './pages/Admin'
 import Cursor from './components/Cursor'
 import AccessibilityPanel from './components/AccessibilityPanel'
@@ -54,6 +55,8 @@ export default function App() {
       <DataContext.Provider value={data}>
         <Routes>
           <Route path="/admin/login" element={<Login />} />
+          <Route path="/registro" element={<Register />} />
+          <Route path="/admin/register" element={<Register />} />
           <Route
             path="/admin"
             element={

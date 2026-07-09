@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
 import styles from '../styles/Login.module.css'
 
@@ -73,6 +73,10 @@ export default function Login() {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
+
+        <p className={styles.links}>
+          ¿No tienes cuenta? <Link to="/registro">Crear cuenta</Link>
+        </p>
       </div>
     </div>
   )

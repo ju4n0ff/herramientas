@@ -17,7 +17,16 @@ async function check() {
   console.log('=== VERIFICACION DE SUPABASE ===\n')
 
   // 1. Tablas
-  const tables = ['categories', 'slides', 'packs', 'pack_items', 'contact_info', 'photo_wall']
+  const tables = [
+    'categories',
+    'slides',
+    'packs',
+    'pack_items',
+    'contact_info',
+    'photo_wall',
+    'profiles',
+    'messages',
+  ]
   for (const t of tables) {
     const { data, error } = await supabase.from(t).select('*', { count: 'exact', head: true })
     if (error) {
