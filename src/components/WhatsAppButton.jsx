@@ -1,12 +1,13 @@
 import styles from '../styles/WhatsAppButton.module.css'
 
-const WHATSAPP_URL =
-  'https://api.whatsapp.com/send?phone=51952365703&text=Hola%2C+te+escribo+por...'
+export default function WhatsAppButton({ contactInfo }) {
+  const rawNumber = contactInfo?.find(c => c.label === 'WhatsApp')?.value || '952 365 703'
+  const phone = rawNumber.replace(/\s+/g, '')
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=Hola%2C+te+escribo+por...`
 
-export default function WhatsAppButton() {
   return (
     <a
-      href={WHATSAPP_URL}
+      href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={styles.button}

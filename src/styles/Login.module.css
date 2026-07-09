@@ -1,0 +1,92 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream, #f5f0e8);
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.card {
+  background: var(--white, #fdfaf5);
+  border-radius: 12px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--brown, #3d2b1f);
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--muted, #735a48);
+  margin-bottom: 32px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted, #735a48);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field input {
+  padding: 10px 14px;
+  border: 1px solid var(--sand, #d4c4a8);
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--cream, #f5f0e8);
+  color: var(--text, #2c1f14);
+  transition: border-color 0.2s;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--terracota, #b5714a);
+}
+
+.error {
+  color: #c0392b;
+  font-size: 0.9rem;
+}
+
+.btn {
+  padding: 12px;
+  background: var(--terracota, #b5714a);
+  color: var(--white, #fdfaf5);
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: var(--terra-dk, #8a4f2f);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

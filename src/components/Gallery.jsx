@@ -1,10 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { SLIDES, CATS } from '../data'
 import styles from '../styles/Gallery.module.css'
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-export default function Gallery() {
+export default function Gallery({ slides, categories }) {
   const [activeCat, setActiveCat] = useState('all')
   const [currentIdx, setCurrentIdx] = useState(0)
   const [lightboxIdx, setLightboxIdx] = useState(null)
@@ -16,7 +15,7 @@ export default function Gallery() {
   const lightboxRef = useRef(null)
   const previousFocusRef = useRef(null)
 
-  const visible = SLIDES.filter(
+  const visible = slides.filter(
     (s) => activeCat === 'all' || s.cat === activeCat
   )
 
@@ -35,22 +34,21 @@ export default function Gallery() {
     scrollToIdx(next)
   }
 
-  const lbSlideBy = (dir) => {
+  const lbSlideBy = useCallback((dir) => {
     setLightboxIdx((prev) => {
       const next = prev + dir
       if (next < 0) return visible.length - 1
       if (next >= visible.length) return 0
       return next
     })
-  }
+  }, [visible.length])
 
-  // reset when category changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentIdx(0)
     trackRef.current?.scrollTo({ left: 0, behavior: 'smooth' })
   }, [activeCat])
 
-  // keyboard for lightbox
   useEffect(() => {
     if (lightboxIdx === null) return
     previousFocusRef.current = document.activeElement
@@ -84,9 +82,8 @@ export default function Gallery() {
       document.body.style.overflow = ''
       previousFocusRef.current?.focus()
     }
-  }, [lightboxIdx])
+  }, [lightboxIdx, lbSlideBy])
 
-  /* ── drag to scroll ── */
   const onMouseDown = (e) => {
     isDragging.current  = true
     startX.current      = e.pageX - trackRef.current.offsetLeft
@@ -108,14 +105,12 @@ export default function Gallery() {
     trackRef.current.scrollLeft = scrollLeft.current - (x - startX.current) * 1.2
   }
 
-  /* ── touch ── */
   const onTouchStart = (e) => { touchStart.current = e.touches[0].clientX }
   const onTouchEnd   = (e) => {
     const diff = touchStart.current - e.changedTouches[0].clientX
     if (Math.abs(diff) > 40) slideBy(diff > 0 ? 1 : -1)
   }
 
-  /* ── update dot on scroll ── */
   const onScroll = () => {
     if (!trackRef.current) return
     const items = [...trackRef.current.querySelectorAll(`.${styles.slide}`)]
@@ -132,7 +127,6 @@ export default function Gallery() {
 
   return (
     <section className={styles.gallery} id="galeria">
-      {/* Header */}
       <div className={`${styles.header} reveal`}>
         <span className="section-tag">Portafolio</span>
         <h2 className="section-title">
@@ -144,9 +138,8 @@ export default function Gallery() {
         </p>
       </div>
 
-      {/* Category tabs */}
       <div className={`${styles.catTabs} reveal`}>
-        {CATS.map((c) => (
+        {categories.map((c) => (
           <button
             key={c.key}
             className={`${styles.tab}${activeCat === c.key ? ` ${styles.active}` : ''}`}
@@ -157,7 +150,6 @@ export default function Gallery() {
         ))}
       </div>
 
-      {/* Carousel */}
       <div className={styles.carouselWrap}>
         <button className={`${styles.btn} ${styles.prev}`} onClick={() => slideBy(-1)} aria-label="Anterior">
             ←
@@ -200,7 +192,6 @@ export default function Gallery() {
           </button>
       </div>
 
-      {/* Dots */}
       <div className={styles.dots}>
         {visible.map((_, i) => (
           <button
@@ -212,7 +203,6 @@ export default function Gallery() {
         ))}
       </div>
 
-      {/* Lightbox */}
       {lightboxIdx !== null && (
         <div
           className={styles.lightbox}

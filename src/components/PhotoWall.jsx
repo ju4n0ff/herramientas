@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { PHOTO_WALL } from '../data'
 import styles from '../styles/PhotoWall.module.css'
 
 const ORIENTATION_WEIGHT = {
@@ -22,7 +21,7 @@ const distributeColumns = (photos, columnCount) => {
   return columns
 }
 
-export default function PhotoWall() {
+export default function PhotoWall({ photos }) {
   const [columnCount, setColumnCount] = useState(4)
 
   useEffect(() => {
@@ -44,9 +43,9 @@ export default function PhotoWall() {
     }
   }, [])
 
-  const columns = useMemo(() => distributeColumns(PHOTO_WALL, columnCount), [columnCount])
+  const columns = useMemo(() => distributeColumns(photos, columnCount), [photos, columnCount])
 
-  if (!PHOTO_WALL.length) {
+  if (!photos.length) {
     return null
   }
 

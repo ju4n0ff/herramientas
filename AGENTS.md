@@ -3,9 +3,13 @@
 ## Project Snapshot
 
 - Single-package React 18 + Vite 5 app (no TypeScript, no tests). Entrypoints: `src/main.jsx` → `src/App.jsx`.
-- `react-router-dom` v7 with `BrowserRouter`. `MainLayout` wraps the home route via `<Outlet>` and owns shared state (`Navbar`, `Footer`, `Modal`, `WhatsAppButton`). `<Cursor />` sits outside `<Routes>` in `App.jsx`.
-- `MainLayout` uses `useModal` from `src/hooks/useModal.js` and passes `{ open }` via `<Outlet context={{open}}/>`. `Home` retrieves it with `useOutletContext()` and forwards to `Packs`/`Contact`.
-- Fonts loaded from Google Fonts: Cormorant Garamond, Jost, Rajdhani (`index.html`). Only `Rajdhani` is used in CSS; the other two are loaded but unused.
+- `react-router-dom` v7 with `BrowserRouter`. `MainLayout` wraps the home route via `<Outlet>` and owns shared state (`Navbar`, `Footer`, `Modal`, `WhatsAppButton`). `<Cursor />` and `<AccessibilityPanel />` sit outside `<Routes>` in `App.jsx`.
+- Data loads from Supabase on first visit. Falls back to static `src/data/index.js` if Supabase is unreachable or unconfigured. `App.jsx` fetches data once via `useData()` and provides it through `DataContext`. `MainLayout` passes `{ open, data }` via `<Outlet context>`. `Home` distributes `data.slides`, `data.categories`, `data.packs`, `data.photoWall` as props to children.
+- Fonts: Cormorant Garamond, Jost, Rajdhani loaded from Google Fonts (`index.html`). Only `Rajdhani` used in CSS; others loaded but unused.
+
+## Supabase Schema
+
+Migration: `supabase/migrations/001_schema.sql`. Tables: `categories`, `slides`, `packs`, `pack_items`, `contact_info`, `photo_wall`. All have public SELECT policies. Insert/update restricted to authenticated users (future admin). The `categories` table includes a synthetic `all` row that the data service prepends client-side.
 
 ## Commands
 
@@ -17,31 +21,52 @@
 | `npm run lint` | ESLint on `src/`, **zero warnings** (`--max-warnings 0`) |
 | `npm run format` | Prettier writes in-place to `src/` |
 
-**Note**: `eslint` and `prettier` are NOT listed in `package.json` devDependencies. If these commands fail, install them manually (`npm i -D eslint prettier` + plugins).
+**Note**: Ensure `eslint` (v8.x) and `prettier` are installed. Run `npm i -D eslint@8 prettier eslint-plugin-react eslint-plugin-react-hooks`.
 
 ## Code Conventions
 
 - **Prettier** (`.prettierrc`): no semicolons, single quotes, trailing commas (`es5`), printWidth 100, tabWidth 2.
 - **ESLint** (`.eslintrc.json`): `react/prop-types` off, `no-unused-vars` as `warn` with `argsIgnorePattern: "^_"`.
-- **Styling**: CSS Modules in `src/styles/*.module.css` (flat, not co-located) + `src/styles/global.css`. Exception: `Error.css` is a plain CSS file (not a module). Shared helpers: `.section-tag`, `.section-title`, `.section-desc`, `.reveal` (scroll-triggered animation classes).
-- **Images**: All photos in AVIF format. Source originals go in `raw/<category>/`; run `node scripts/convertir.mjs` to convert + resize (max 1200 px, quality 80) into `src/assets/images/<category>/`. Special files: `raw/hero.*` → `src/assets/images/hero.avif` (1600px), `raw/about.*` → `src/assets/images/about.avif` (800px), `raw/logo.*` → `src/assets/images/logo.avif` (800px).
-- **Photo wall** (`PHOTO_WALL` in data): images from `src/assets/images/mosaico/` loaded via Vite glob (`import.meta.glob`). File naming: `v<N>` = portrait, `h<N>` = landscape, `s<N>` = square.
-- **Image references in code**: Hero and logo use direct ES imports (`import heroSrc from '../assets/images/hero.avif'`). Gallery slides use `import.meta.glob` in `src/data/index.js` to resolve image paths at build time. Avoid hardcoded string paths to `src/assets/images/` — they work in dev but not in production builds.
+- **Styling**: CSS Modules in `src/styles/*.module.css` (flat, not co-located) + `src/styles/global.css`. Shared helpers: `.section-tag`, `.section-title`, `.section-desc`, `.reveal` (scroll-triggered animation classes).
+- **Images**: All photos in AVIF format. Run `node scripts/convertir.mjs` to convert originals from `raw/<category>/` → `src/assets/images/<category>/` (max 1200px, quality 80). Special: `raw/hero.*` → `src/assets/images/hero.avif` (1600px), `raw/about.*` → 800px, `raw/logo.*` → 800px.
+- **Image references in code**: Hero/logo use direct ES imports. Gallery/photo-wall images use `import.meta.glob` in `src/services/dataService.js` to resolve paths at build time. Never hardcode `src/assets/images/` string paths — they work in dev but break in production.
+
+## Data Flow
+
+```
+App (useData → DataContext)
+ └── BrowserRouter
+      └── AppContent (reads useData; shows LoadingSpinner while loading)
+           └── DataContext.Provider
+                └── Routes
+                     └── MainLayout (reads DataContext; passes data to Footer, Modal, WhatsApp)
+                          ├── Outlet context={{ open, data }}
+                          │    └── Home
+                          │         ├── Gallery     ← props: slides, categories
+                          │         ├── PhotoWall   ← props: photos
+                          │         └── Packs       ← props: packs
+                          └── Footer                ← props: contactInfo
+                          └── Modal                 ← props: categories, contactInfo
+                          └── WhatsAppButton        ← props: contactInfo
+```
+
+- `src/services/supabaseClient.js` — initializes Supabase client (null if env vars missing).
+- `src/services/dataService.js` — `fetchAllData()` queries 5 tables in parallel; resolves image URLs via glob; falls back to `src/data/index.js` if any query fails.
+- `src/hooks/useData.js` — calls `fetchAllData()` once, caches result in `sessionStorage`. Shows global spinner until loaded.
+- `src/data/index.js` — static data used as fallback when Supabase is unavailable.
 
 ## Data & Environment
 
-- `src/data/index.js` — single source of truth for all static content: `SLIDES`, `CATS`, `PACKS`, `CONTACT_INFO`, `PHOTO_WALL`. Edit data here, never in components.
-- EmailJS contact form in `src/services/contactService.js`. Requires `.env` with `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY`. Template variables: `nombre`, `telefono`, `servicio`, `fecha`, `mensaje`.
+- `.env` (copy from `.env.example`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY`.
+- EmailJS contact form in `src/services/contactService.js`. Template variables: `nombre`, `telefono`, `servicio`, `fecha`, `mensaje`.
 - `.gitignore` excludes `.env`, `raw/`, `dist/`, `.vite/`, `node_modules/`.
-- `DOCUMENTACION_AVANCE.md` at repo root contains detailed project documentation (tech decisions, branch strategy, commit history).
 
 ## Gotchas
 
-- `src/App.jsx` has a dead import: `import Packs from './components/Packs'` — not referenced in its JSX. Real usage is from `src/pages/Home.jsx`.
-- `src/components/Services.jsx` is orphaned (imported by no other module) **and broken** — imports `SERVICES` from `../data` but `src/data/index.js` does not export it.
-- `AccessibilityPanel` (535 lines) renders alongside `Cursor` outside `<Routes>`. Persists settings to `localStorage` under key `raymi-a11y`. Uses `data-*` attributes on `<html>` to toggle font-size, contrast, dyslexia mode, reading mask, big cursor, etc.
-- App.jsx imports `@vercel/analytics` and `@vercel/speed-insights` — they render inside `BrowserRouter` but outside `<Routes>`.
-- `README.md` mentions Supabase as backend — this is stale; no Supabase code exists in the project.
+- `src/App.jsx` has a dead import: `import Packs from './components/Packs'` — not referenced in JSX. Real usage is from `src/pages/Home.jsx`.
+- `src/components/Services.jsx` is orphaned (imported by no module) and broken — imports `SERVICES` from `../data` but `src/data/index.js` does not export it.
+- Admin routes: `/admin/login` (login form) and `/admin` (dashboard, protected by `ProtectedRoute`). Uses `supabase.auth.signInWithPassword()`. Create users manually in Supabase Auth dashboard.
+- Seed data: `supabase/seed.sql` — run this in Supabase SQL Editor after `001_schema.sql` to populate tables with current portfolio data. Images stay as local AVIF files (only metadata in DB).
 - Both `package-lock.json` and `pnpm-lock.yaml` exist; `npm install` is the verified install command.
-- `useScrollReveal` (`src/hooks/useScrollReveal.js`) uses a `MutationObserver` to observe new `.reveal` elements added to the DOM. It runs once on mount (`[]` deps) and auto-observes new elements. If a component re-renders and creates new `.reveal` children, they will be picked up automatically — do NOT remove the MutationObserver.
-- The mobile hamburger menu works by making the `<nav>` itself fullscreen (`height: 100vh; inset: 0`) when `menuOpen` is true. Do NOT use `position: fixed` on the `<ul>` child — that creates stacking context conflicts with the nav's `backdrop-filter`.
+- `useScrollReveal` (`src/hooks/useScrollReveal.js`) uses a `MutationObserver` to observe new `.reveal` elements. It runs once on mount (`[]` deps) and auto-observes new elements — do NOT remove the MutationObserver.
+- The mobile hamburger menu makes the `<nav>` itself fullscreen (`height: 100vh; inset: 0`) when `menuOpen` is true. Do NOT use `position: fixed` on the `<ul>` child — that creates stacking context conflicts with the nav's `backdrop-filter`.

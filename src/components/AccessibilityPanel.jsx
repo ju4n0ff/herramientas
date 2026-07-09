@@ -159,7 +159,9 @@ function findMeaningful(el) {
 export default function AccessibilityPanel() {
   const [open, setOpen] = useState(false)
   const [settings, setSettings] = useState(loadSettings)
+  // eslint-disable-next-line no-unused-vars
   const [mouseY, setMouseY] = useState(0)
+  // eslint-disable-next-line no-unused-vars
   const [mouseX, setMouseX] = useState(0)
   const maskRef = useRef(null)
   const cursorRef = useRef(null)

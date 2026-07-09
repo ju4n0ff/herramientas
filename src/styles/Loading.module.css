@@ -1,0 +1,31 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream, #f5f0e8);
+  z-index: 9999;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--sand, #d4c4a8);
+  border-top-color: var(--terracota, #b5714a);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.label {
+  margin-top: 20px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  color: var(--muted, #735a48);
+  letter-spacing: 0.08em;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

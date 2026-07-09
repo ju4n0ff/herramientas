@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { CATS } from '../data'
 import styles from '../styles/Modal.module.css'
 import { enviarMensaje } from '../services/contactService'
-
-const SERVICE_TYPES = CATS.filter(c => c.key !== 'all')
 
 const INITIAL_FORM = {
   nombre:   '',
@@ -13,7 +10,7 @@ const INITIAL_FORM = {
   mensaje:  '',
 }
 
-const PHONE_RE = /^[\d\s\+\-\(\)]{7,}$/
+const PHONE_RE = /^[\d\s\-()]{7,}$/
 
 function validate(form) {
   const errors = {}
@@ -24,7 +21,7 @@ function validate(form) {
   return errors
 }
 
-export default function Modal({ isOpen, onClose, preselect }) {
+export default function Modal({ isOpen, onClose, preselect, categories, contactInfo }) {
   const [form, setForm] = useState(INITIAL_FORM)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -32,6 +29,9 @@ export default function Modal({ isOpen, onClose, preselect }) {
   const [submitError, setSubmitError] = useState('')
   const modalRef = useRef(null)
   const previousFocusRef = useRef(null)
+
+  const serviceTypes = categories ? categories.filter(c => c.key !== 'all') : []
+  const whatsappNumber = contactInfo?.find(c => c.label === 'WhatsApp')?.value?.replace(/\s+/g, '') || '51952365703'
 
   const getFocusableElements = useCallback(() => {
     if (!modalRef.current) return []
@@ -75,12 +75,14 @@ export default function Modal({ isOpen, onClose, preselect }) {
 
   useEffect(() => {
     if (preselect) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm((prev) => ({ ...prev, servicio: preselect }))
     }
   }, [preselect])
 
   useEffect(() => {
     if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setErrors({})
       setSubmitting(false)
       setSent(false)
@@ -150,7 +152,6 @@ export default function Modal({ isOpen, onClose, preselect }) {
         aria-labelledby="modal-title"
         ref={modalRef}
       >
-        {/* Header */}
         <div className={styles.header}>
           <h2 className={styles.title} id="modal-title">
             Hablemos de<br /><em>tu historia</em>
@@ -165,7 +166,6 @@ export default function Modal({ isOpen, onClose, preselect }) {
           </button>
         </div>
 
-        {/* Body */}
         <div className={styles.body}>
           {sent ? (
             <div className={styles.successMessage}>
@@ -215,7 +215,7 @@ export default function Modal({ isOpen, onClose, preselect }) {
                     disabled={submitting}
                   >
                     <option value="">Selecciona un servicio</option>
-                    {SERVICE_TYPES.map((s) => (
+                    {serviceTypes.map((s) => (
                       <option key={s.key} value={s.label}>
                         {s.label}
                       </option>
@@ -264,7 +264,7 @@ export default function Modal({ isOpen, onClose, preselect }) {
               <p className={styles.whatsappHint}>
                 ¿Prefieres escribir directo?{' '}
                 <a
-                  href="https://api.whatsapp.com/send?phone=51952365703&text=Hola%2C+te+escribo+por..."
+                  href={`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola%2C+te+escribo+por...`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

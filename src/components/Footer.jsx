@@ -30,10 +30,14 @@ const SOCIALS = [
   { icon: <TikTokIcon/>,    label: 'TikTok',    href: 'https://www.tiktok.com/@raymifotografia' },
 ]
 
-export default function Footer() {
+export default function Footer({ contactInfo }) {
+  const email = contactInfo?.find(c => c.label === 'Email')?.value || 'raymifotografia24@gmail.com'
+  const phone = contactInfo?.find(c => c.label === 'WhatsApp')?.value || '+51 952 365 703'
+  const location = contactInfo?.find(c => c.label === 'Ubicación')?.value || 'Lima, Perú'
+
   return (
     <footer className={styles.footer}>
-      <div className={styles.top}> 
+      <div className={styles.top}>
         <div className={styles.column}>
           <div className={styles.logo}>
             Raymi<span>Fotografía</span>
@@ -53,9 +57,9 @@ export default function Footer() {
 
         <div className={styles.column}>
           <h3>Contacto</h3>
-          <a href="mailto:raymifotografia24@gmail.com">raymifotografia24@gmail.com</a>
-          <span>+51 952 365 703</span>
-          <span>Lima, Perú</span>
+          <a href={`mailto:${email}`}>{email}</a>
+          <span>{phone}</span>
+          <span>{location}</span>
         </div>
 
         <div className={styles.column}>
@@ -79,9 +83,9 @@ export default function Footer() {
 
       <div className={styles.bottom}>
         <div className={styles.legal}>
-          <span>© {new Date().getFullYear()} Raymi Fotografía · Todos los derechos reservados</span>
+          <span>&copy; {new Date().getFullYear()} Raymi Fotograf&iacute;a &middot; Todos los derechos reservados</span>
           <span>
-            Hecho en Lima - Perú ·{' '}
+            Hecho en Lima - Per&uacute; &middot;{' '}
             <a
               href="https://portfolio-gilt-five-56.vercel.app/"
               target="_blank"

@@ -1,10 +1,8 @@
-import { PACKS } from '../data'
 import styles from '../styles/Packs.module.css'
 
-export default function Packs({ onReserve }) {
+export default function Packs({ packs, onReserve }) {
   return (
     <section className={styles.packs} id="packs">
-      {/* Header */}
       <div className="section-header reveal" style={{ textAlign: 'center', padding: '0 48px', marginBottom: '64px' }}>
         <span className="section-tag" style={{ color: 'var(--terra-lt)' }}>
           Packs &amp; Precios
@@ -18,9 +16,8 @@ export default function Packs({ onReserve }) {
         </p>
       </div>
 
-      {/* Grid */}
       <div className={styles.grid}>
-        {PACKS.map((pack, i) => (
+        {packs.map((pack, i) => (
           <div
             key={pack.name}
             className={`${styles.card}${pack.featured ? ` ${styles.featured}` : ''} reveal`}
