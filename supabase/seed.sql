@@ -122,28 +122,33 @@ insert into public.contact_info (icon, label, value, sort_order) values
   ('✉️',  'Email',     'raymifotografia24@gmail.com',   5),
   ('📱', 'WhatsApp',   '952 365 703',                    6);
 
--- PHOTO WALL (solo metadatos, las imágenes se resuelven por filename vía import.meta.glob)
+-- PHOTO WALL (las imágenes se sirven desde Storage: images/mosaico/{filename})
+delete from public.photo_wall where id = 'v11';
+
 insert into public.photo_wall (id, filename, alt, orientation, sort_order) values
-  ('v01', 'v01.avif', 'Mosaico v01', 'portrait',  1),
-  ('v02', 'v02.avif', 'Mosaico v02', 'portrait',  2),
-  ('v03', 'v03.avif', 'Mosaico v03', 'portrait',  3),
-  ('v04', 'v04.avif', 'Mosaico v04', 'portrait',  4),
-  ('v05', 'v05.avif', 'Mosaico v05', 'portrait',  5),
-  ('v06', 'v06.avif', 'Mosaico v06', 'portrait',  6),
-  ('v07', 'v07.avif', 'Mosaico v07', 'portrait',  7),
-  ('v08', 'v08.avif', 'Mosaico v08', 'portrait',  8),
-  ('v09', 'v09.avif', 'Mosaico v09', 'portrait',  9),
+  ('v01', 'v1.avif', 'Mosaico v1', 'portrait',  1),
+  ('v02', 'v2.avif', 'Mosaico v2', 'portrait',  2),
+  ('v03', 'v3.avif', 'Mosaico v3', 'portrait',  3),
+  ('v04', 'v4.avif', 'Mosaico v4', 'portrait',  4),
+  ('v05', 'v5.avif', 'Mosaico v5', 'portrait',  5),
+  ('v06', 'v6.avif', 'Mosaico v6', 'portrait',  6),
+  ('v07', 'v7.avif', 'Mosaico v7', 'portrait',  7),
+  ('v08', 'v8.avif', 'Mosaico v8', 'portrait',  8),
+  ('v09', 'v9.avif', 'Mosaico v9', 'portrait',  9),
   ('v10', 'v10.avif', 'Mosaico v10', 'portrait', 10),
-  ('v11', 'v11.avif', 'Mosaico v11', 'portrait', 11),
-  ('h01', 'h01.avif', 'Mosaico h01', 'landscape', 12),
-  ('h02', 'h02.avif', 'Mosaico h02', 'landscape', 13),
-  ('h03', 'h03.avif', 'Mosaico h03', 'landscape', 14),
-  ('h04', 'h04.avif', 'Mosaico h04', 'landscape', 15),
-  ('h05', 'h05.avif', 'Mosaico h05', 'landscape', 16),
-  ('h06', 'h06.avif', 'Mosaico h06', 'landscape', 17),
-  ('h07', 'h07.avif', 'Mosaico h07', 'landscape', 18),
-  ('h08', 'h08.avif', 'Mosaico h08', 'landscape', 19),
-  ('h09', 'h09.avif', 'Mosaico h09', 'landscape', 20),
-  ('h10', 'h10.avif', 'Mosaico h10', 'landscape', 21),
-  ('h11', 'h11.avif', 'Mosaico h11', 'landscape', 22)
-on conflict (id) do nothing;
+  ('h01', 'h1.avif', 'Mosaico h1', 'landscape', 11),
+  ('h02', 'h2.avif', 'Mosaico h2', 'landscape', 12),
+  ('h03', 'h3.avif', 'Mosaico h3', 'landscape', 13),
+  ('h04', 'h4.avif', 'Mosaico h4', 'landscape', 14),
+  ('h05', 'h5.avif', 'Mosaico h5', 'landscape', 15),
+  ('h06', 'h6.avif', 'Mosaico h6', 'landscape', 16),
+  ('h07', 'h7.avif', 'Mosaico h7', 'landscape', 17),
+  ('h08', 'h8.avif', 'Mosaico h8', 'landscape', 18),
+  ('h09', 'h9.avif', 'Mosaico h9', 'landscape', 19),
+  ('h10', 'h10.avif', 'Mosaico h10', 'landscape', 20),
+  ('h11', 'h11.avif', 'Mosaico h11', 'landscape', 21)
+on conflict (id) do update set
+  filename = excluded.filename,
+  alt = excluded.alt,
+  orientation = excluded.orientation,
+  sort_order = excluded.sort_order;

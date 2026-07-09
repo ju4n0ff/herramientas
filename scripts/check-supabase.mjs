@@ -28,26 +28,30 @@ async function check() {
   }
 
   // 2. Storage
-  const { data: buckets } = await supabase.storage.listBuckets()
-  const bucket = buckets?.find((b) => b.name === 'images')
-  if (bucket) {
-    console.log(`\nV Bucket images: publico = ${bucket.public}`)
-    const { data: slides } = await supabase.storage.from('images').list('slides')
-    if (slides) {
-      const avifs = slides.filter((f) => f.name.endsWith('.avif'))
-      console.log(`  slides/: ${avifs.length} archivos`)
-      console.log('  Ej: ' + avifs.slice(0, 3).map((f) => f.name).join(', ') + (avifs.length > 3 ? '...' : ''))
-    }
-    const { data: mosaic } = await supabase.storage.from('images').list('mosaico')
-    if (mosaic) {
-      const avifs = mosaic.filter((f) => f.name.endsWith('.avif'))
-      console.log(`  mosaico/: ${avifs.length} archivos`)
-    }
-    const { data: root } = await supabase.storage.from('images').list()
-    const specials = root?.filter((f) => ['hero.avif', 'logo.avif'].includes(f.name))
-    if (specials) console.log(`  raiz/: ${specials.map((f) => f.name).join(', ')}`)
+  console.log('\nStorage images:')
+  const { data: slides, error: slidesError } = await supabase.storage.from('images').list('slides', { limit: 200 })
+  if (slidesError) {
+    console.log(`  X slides/: ${slidesError.message}`)
   } else {
-    console.log('\nX Bucket images no encontrado')
+    const avifs = slides.filter((f) => f.name.endsWith('.avif'))
+    console.log(`  slides/: ${avifs.length} archivos`)
+    console.log('  Ej: ' + avifs.slice(0, 5).map((f) => f.name).join(', ') + (avifs.length > 5 ? '...' : ''))
+  }
+
+  const { data: mosaic, error: mosaicError } = await supabase.storage.from('images').list('mosaico', { limit: 200 })
+  if (mosaicError) {
+    console.log(`  X mosaico/: ${mosaicError.message}`)
+  } else {
+    const avifs = mosaic.filter((f) => f.name.endsWith('.avif'))
+    console.log(`  mosaico/: ${avifs.length} archivos`)
+    console.log('  Archivos: ' + avifs.map((f) => f.name).join(', '))
+  }
+
+  const { data: root, error: rootError } = await supabase.storage.from('images').list('', { limit: 200 })
+  if (rootError) {
+    console.log(`  X raiz/: ${rootError.message}`)
+  } else {
+    console.log(`  raiz/: ${root.map((f) => f.name).join(', ')}`)
   }
 
   console.log('\nPrueba de URL directa:')

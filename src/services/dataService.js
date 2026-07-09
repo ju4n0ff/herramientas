@@ -5,6 +5,13 @@ const normalizeFile = (name) => name.replace(/ñ/g, 'n').replace(/Ñ/g, 'N')
 
 const storagePath = (path) => (STORAGE_URL ? `${STORAGE_URL}/${path}` : '')
 
+const normalizeMosaicFile = (name) => name.replace(/^([hv])0+(\d+\.avif)$/i, '$1$2')
+
+const resolveMosaicFile = (filename, availableFiles) => {
+  const candidates = [filename, normalizeMosaicFile(filename)]
+  return candidates.find((candidate) => availableFiles.has(candidate)) || null
+}
+
 /* ── Static fallback ── */
 
 export function getStaticData() {
@@ -18,7 +25,7 @@ export function getStaticData() {
     contactInfo: CONTACT_INFO,
     photoWall: PHOTO_WALL.map((photo) => ({
       ...photo,
-      src: storagePath(`mosaico/${photo.id}.avif`),
+      src: storagePath(`mosaico/${photo.filename}`),
     })),
   }
 }
@@ -124,22 +131,41 @@ async function fetchContactInfo() {
 async function fetchPhotoWall() {
   if (!supabase) return null
 
-  const { data, error } = await supabase
-    .from('photo_wall')
-    .select('id, filename, alt, orientation')
-    .order('sort_order')
+  const [{ data, error }, { data: storageFiles, error: storageError }] = await Promise.all([
+    supabase
+      .from('photo_wall')
+      .select('id, filename, alt, orientation')
+      .order('sort_order'),
+    supabase.storage.from('images').list('mosaico', { limit: 200 }),
+  ])
 
   if (error) {
     console.warn('[dataService] Error fetching photo_wall:', error.message)
     return null
   }
 
-  const withSrc = data.map((row) => ({
-    id: row.id,
-    src: storagePath(`mosaico/${row.filename}`),
-    alt: row.alt,
-    orientation: row.orientation,
-  }))
+  if (storageError) {
+    console.warn('[dataService] Error listing mosaico storage:', storageError.message)
+  }
+
+  const availableFiles = new Set((storageFiles || []).map((file) => file.name))
+
+  const withSrc = data
+    .map((row) => {
+      const filename = availableFiles.size
+        ? resolveMosaicFile(row.filename, availableFiles)
+        : normalizeMosaicFile(row.filename)
+
+      if (!filename) return null
+
+      return {
+        id: row.id,
+        src: storagePath(`mosaico/${filename}`),
+        alt: row.alt,
+        orientation: row.orientation,
+      }
+    })
+    .filter(Boolean)
 
   const WALL_TILTS = [-1.8, 1.6, -0.9, 1.1, -1.4, 1.7, -1.1, 1.3]
   const WALL_PATTERNS = [
