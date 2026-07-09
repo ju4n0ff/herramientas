@@ -1,103 +1,8 @@
-import { supabase } from './supabaseClient'
+import { supabase, STORAGE_URL } from './supabaseClient'
 
-const slidesModules = import.meta.glob(
-  '../assets/images/{bautizo,paisajes,pedida-de-mano,urbanos,fotos-dentales,maternales,motos,cumpleaños}/*.avif',
-  { eager: true, query: '?url', import: 'default' },
-)
+const normalizeFile = (name) => name.replace(/ñ/g, 'n').replace(/Ñ/g, 'N')
 
-const slideUrlByFilename = {}
-for (const [filePath, url] of Object.entries(slidesModules)) {
-  const filename = filePath.replace(/\\/g, '/').split('/').pop()
-  if (filename) slideUrlByFilename[filename] = url
-}
-
-const photoWallModules = import.meta.glob(
-  '../../src/assets/images/mosaico/*.{avif,webp,jpg,jpeg,png}',
-  { eager: true, query: '?url', import: 'default' },
-)
-
-const wallPhotosMap = {}
-for (const [filePath, url] of Object.entries(photoWallModules)) {
-  const filename = filePath.replace(/\\/g, '/').split('/').pop()
-  if (filename) wallPhotosMap[filename] = url
-}
-
-const WALL_TILTS = [-1.8, 1.6, -0.9, 1.1, -1.4, 1.7, -1.1, 1.3]
-const WALL_PATTERNS = [
-  ['portrait', 'landscape', 'portrait', 'landscape'],
-  ['landscape', 'landscape', 'portrait', 'landscape'],
-  ['portrait', 'portrait', 'landscape', 'portrait'],
-  ['landscape', 'portrait', 'landscape', 'portrait'],
-]
-
-const distributeWallPhotos = (photos) => {
-  const buckets = {
-    portrait: photos.filter((p) => p.orientation === 'portrait'),
-    landscape: photos.filter((p) => p.orientation === 'landscape'),
-    square: photos.filter((p) => p.orientation === 'square'),
-  }
-
-  const ordered = []
-  let patternIndex = 0
-
-  const takeNext = (bucket) => bucket.shift() ?? null
-
-  const repeatsTooMuch = (ordered, candidateOrientation) => {
-    if (ordered.length < 2) return false
-    const last = ordered[ordered.length - 1]?.orientation
-    const prev = ordered[ordered.length - 2]?.orientation
-    return last === candidateOrientation && prev === candidateOrientation
-  }
-
-  const pickByPreference = (buckets, preferred, ordered) => {
-    const fallbackOrder =
-      preferred === 'landscape'
-        ? ['landscape', 'portrait', 'square']
-        : ['portrait', 'square', 'landscape']
-
-    let delayedCandidate = null
-
-    for (const key of fallbackOrder) {
-      const photo = buckets[key][0] ?? null
-      if (!photo) continue
-      if (repeatsTooMuch(ordered, photo.orientation)) {
-        if (!delayedCandidate) delayedCandidate = { key, photo }
-        continue
-      }
-      takeNext(buckets[key])
-      return photo
-    }
-
-    if (delayedCandidate) {
-      takeNext(buckets[delayedCandidate.key])
-      return delayedCandidate.photo
-    }
-
-    for (const key of ['portrait', 'landscape', 'square']) {
-      const photo = takeNext(buckets[key])
-      if (photo) return photo
-    }
-
-    return null
-  }
-
-  while (
-    buckets.portrait.length ||
-    buckets.landscape.length ||
-    buckets.square.length
-  ) {
-    const pattern = WALL_PATTERNS[patternIndex % WALL_PATTERNS.length]
-    for (const orientation of pattern) {
-      const nextPhoto = pickByPreference(buckets, orientation, ordered)
-      if (nextPhoto) ordered.push(nextPhoto)
-    }
-    patternIndex += 1
-  }
-
-  return ordered
-}
-
-/* ── Static fallbacks ── */
+/* ── Static fallback ── */
 
 async function loadStaticFallback() {
   const data = await import('../data/index.js')
@@ -135,11 +40,13 @@ async function fetchSlides() {
     return null
   }
 
-  return data.map((row) => {
-    const filename = `${row.cat}/${row.id}.avif`
-    const src = slideUrlByFilename[`${row.id}.avif`] || `src/assets/images/${filename}`
-    return { id: row.id, cat: row.cat, src, label: row.label, caption: row.caption }
-  })
+  return data.map((row) => ({
+    id: row.id,
+    cat: row.cat,
+    src: `${STORAGE_URL}/slides/${normalizeFile(row.id)}.avif`,
+    label: row.label,
+    caption: row.caption,
+  }))
 }
 
 async function fetchPacks() {
@@ -213,32 +120,75 @@ async function fetchPhotoWall() {
     return null
   }
 
-  const sorted = data
-    .map((row) => ({
-      ...row,
-      src: wallPhotosMap[row.filename] || `src/assets/images/mosaico/${row.filename}`,
-    }))
-    .sort((a, b) => {
-      const orientationOrder = { v: 0, h: 1, s: 2 }
-      const aPrefix = a.filename.charAt(0).toLowerCase()
-      const bPrefix = b.filename.charAt(0).toLowerCase()
-      const aRank = orientationOrder[aPrefix] ?? 3
-      const bRank = orientationOrder[bPrefix] ?? 3
-      if (aRank !== bRank) return aRank - bRank
-      const aIdx = Number.parseInt(a.filename.match(/(\d+)/)?.[1], 10) || 0
-      const bIdx = Number.parseInt(b.filename.match(/(\d+)/)?.[1], 10) || 0
-      return aIdx - bIdx
-    })
-
-  const withTilt = sorted.map((photo, index) => ({
-    ...photo,
-    tilt: WALL_TILTS[index % WALL_TILTS.length],
+  const withSrc = data.map((row) => ({
+    id: row.id,
+    src: `${STORAGE_URL}/mosaico/${row.filename}`,
+    alt: row.alt,
+    orientation: row.orientation,
   }))
 
-  return distributeWallPhotos(withTilt).map((photo, index) => ({
-    ...photo,
-    tilt: WALL_TILTS[index % WALL_TILTS.length],
-  }))
+  const WALL_TILTS = [-1.8, 1.6, -0.9, 1.1, -1.4, 1.7, -1.1, 1.3]
+  const WALL_PATTERNS = [
+    ['portrait', 'landscape', 'portrait', 'landscape'],
+    ['landscape', 'landscape', 'portrait', 'landscape'],
+    ['portrait', 'portrait', 'landscape', 'portrait'],
+    ['landscape', 'portrait', 'landscape', 'portrait'],
+  ]
+
+  const distribute = (photos) => {
+    const buckets = {
+      portrait: photos.filter((p) => p.orientation === 'portrait'),
+      landscape: photos.filter((p) => p.orientation === 'landscape'),
+      square: photos.filter((p) => p.orientation === 'square'),
+    }
+
+    const takeNext = (bucket) => bucket.shift() ?? null
+
+    const repeatsTooMuch = (ordered, orientation) => {
+      if (ordered.length < 2) return false
+      return ordered.at(-1)?.orientation === orientation &&
+             ordered.at(-2)?.orientation === orientation
+    }
+
+    const pick = (buckets, preferred, ordered) => {
+      const order = preferred === 'landscape'
+        ? ['landscape', 'portrait', 'square']
+        : ['portrait', 'square', 'landscape']
+      let delayed = null
+      for (const key of order) {
+        const photo = buckets[key][0] ?? null
+        if (!photo) continue
+        if (repeatsTooMuch(ordered, photo.orientation)) {
+          if (!delayed) delayed = { key, photo }
+          continue
+        }
+        takeNext(buckets[key])
+        return photo
+      }
+      if (delayed) { takeNext(buckets[delayed.key]); return delayed.photo }
+      for (const key of ['portrait', 'landscape', 'square']) {
+        const photo = takeNext(buckets[key])
+        if (photo) return photo
+      }
+      return null
+    }
+
+    const result = []
+    let idx = 0
+    while (buckets.portrait.length || buckets.landscape.length || buckets.square.length) {
+      for (const orientation of WALL_PATTERNS[idx % WALL_PATTERNS.length]) {
+        const next = pick(buckets, orientation, result)
+        if (next) result.push(next)
+      }
+      idx++
+    }
+    return result
+  }
+
+  const withTilt = withSrc.map((p, i) => ({ ...p, tilt: WALL_TILTS[i % WALL_TILTS.length] }))
+  const distributed = distribute(withTilt)
+
+  return distributed.map((p, i) => ({ ...p, tilt: WALL_TILTS[i % WALL_TILTS.length] }))
 }
 
 /* ── Public API ── */
@@ -252,18 +202,34 @@ export async function fetchAllData() {
     fetchPhotoWall(),
   ])
 
-  if (categories && slides && packs && contactInfo && photoWall) {
+  if (categories && slides && packs && contactInfo && photoWall && STORAGE_URL) {
     return { categories, slides, packs, contactInfo, photoWall, source: 'supabase' }
   }
 
   const fallback = await loadStaticFallback()
-  console.warn('[dataService Usando datos estáticos como fallback.')
+
+  const slidesWithStorage = fallback.SLIDES.map((s) => ({
+    ...s,
+    src: `${STORAGE_URL}/slides/${normalizeFile(s.id)}.avif`,
+  }))
+
+  const wallWithStorage = fallback.PHOTO_WALL.map((p) => ({
+    ...p,
+    src: `${STORAGE_URL}/mosaico/${normalizeFile(p.id)}.avif`,
+  }))
+
+  if (!STORAGE_URL) {
+    console.warn('[dataService] Sin conexión a Supabase Storage. Las imágenes no cargarán.')
+  } else {
+    console.warn('[dataService] Usando datos estáticos como fallback.')
+  }
+
   return {
     categories: fallback.CATS,
-    slides: fallback.SLIDES,
+    slides: slidesWithStorage,
     packs: fallback.PACKS,
     contactInfo: fallback.CONTACT_INFO,
-    photoWall: fallback.PHOTO_WALL,
+    photoWall: wallWithStorage,
     source: 'fallback',
   }
 }

@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 
-/* ── Leer .env ── */
 function loadEnv() {
   const raw = readFileSync(path.join(ROOT, '.env'), 'utf-8')
   const vars = {}
@@ -31,8 +30,6 @@ const BUCKET = 'images'
 const ASSETS_DIR = path.resolve(ROOT, 'src', 'assets', 'images')
 const PUBLIC_URL = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}`
 
-/* ── Helpers ── */
-
 async function uploadFile(localPath, storagePath) {
   const fileBuffer = readFileSync(localPath)
   const { error } = await supabase.storage.from(BUCKET).upload(storagePath, fileBuffer, {
@@ -43,27 +40,30 @@ async function uploadFile(localPath, storagePath) {
   if (error) throw error
 }
 
-/* ── Main ── */
-
 async function main() {
   console.log('─'.repeat(48))
   console.log('  Upload imágenes → Supabase Storage')
   console.log('─'.repeat(48))
 
-  // Verificar que el bucket existe
-  const { data: buckets } = await supabase.storage.listBuckets()
-  const bucket = buckets?.find((b) => b.name === BUCKET)
-  if (!bucket) {
-    console.error(`
-  ✗ El bucket "${BUCKET}" no existe.
+  // Probar upload directo con un archivo pequeño para ver si el bucket existe
+  const testContent = new Uint8Array([0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66])
+  const { error: testErr } = await supabase.storage.from(BUCKET).upload('.test', testContent, {
+    contentType: 'image/avif',
+    upsert: true,
+  })
 
-  Antes de ejecutar este script, pega esto en el SQL Editor de Supabase:
+  if (testErr) {
+    if (testErr.message?.includes('bucket') || testErr.message?.includes('not found')) {
+      console.error(`
+  ✗ El bucket "${BUCKET}" no se encontró.
 
-  -- 003_storage.sql (crea el bucket + permisos)
+  Pasos:
+  1. Ve a https://supabase.com/dashboard/project/saamzefamyegkqzjypwk
+  2. Abre SQL Editor
+  3. Pega y ejecuta:
+
   insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-  values ('images', 'images', true, 10485760,
-    array['image/avif','image/webp','image/jpeg','image/png'])
-  on conflict (id) do nothing;
+  values ('images', 'images', true, 10485760, array['image/avif','image/webp','image/jpeg','image/png']);
 
   create policy "Lectura pública del bucket images"
     on storage.objects for select using (bucket_id = 'images');
@@ -76,9 +76,16 @@ async function main() {
     using (bucket_id = 'images')
     with check (bucket_id = 'images');
     `)
+    } else {
+      console.error(`\n  Error: ${testErr.message}\n`)
+      console.error('  Asegúrate de haber ejecutado el SQL anterior en el SQL Editor de Supabase.')
+    }
     process.exit(1)
   }
-  console.log(`✓ Bucket "${BUCKET}" encontrado\n`)
+
+  // Limpiar archivo de prueba
+  await supabase.storage.from(BUCKET).remove(['.test'])
+  console.log('✓ Bucket accesible\n')
 
   let total = 0
   let ok = 0
@@ -96,7 +103,6 @@ async function main() {
     }
   }
 
-  // 1. Slides por categoría
   const categories = [
     'bautizo', 'paisajes', 'pedida-de-mano', 'urbanos',
     'fotos-dentales', 'maternales', 'motos', 'cumpleaños',
@@ -113,7 +119,6 @@ async function main() {
     }
   }
 
-  // 2. Mosaico
   const mosaicDir = path.join(ASSETS_DIR, 'mosaico')
   let mosaicFiles
   try { mosaicFiles = readdirSync(mosaicDir).filter((f) => f.endsWith('.avif')).sort() } catch { mosaicFiles = [] }
@@ -124,7 +129,6 @@ async function main() {
     }
   }
 
-  // 3. Hero, logo (en raíz)
   const specials = ['hero.avif', 'logo.avif']
   console.log('\n[especiales]')
   for (const name of specials) {

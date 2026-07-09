@@ -4,7 +4,7 @@
 
 - Single-package React 18 + Vite 5 app (no TypeScript, no tests). Entrypoints: `src/main.jsx` → `src/App.jsx`.
 - `react-router-dom` v7 with `BrowserRouter`. `MainLayout` wraps the home route via `<Outlet>` and owns shared state (`Navbar`, `Footer`, `Modal`, `WhatsAppButton`). `<Cursor />` and `<AccessibilityPanel />` sit outside `<Routes>` in `App.jsx`.
-- Data loads from Supabase on first visit. Falls back to static `src/data/index.js` if Supabase is unreachable or unconfigured. `App.jsx` fetches data once via `useData()` and provides it through `DataContext`. `MainLayout` passes `{ open, data }` via `<Outlet context>`. `Home` distributes `data.slides`, `data.categories`, `data.packs`, `data.photoWall` as props to children.
+- Data loads from Supabase on first visit. Falls back to static `src/data/index.js` if Supabase is unreachable or unconfigured. Images always served from Supabase Storage (bucket `images`). `App.jsx` fetches data once via `useData()` and provides it through `DataContext`. `MainLayout` passes `{ open, data }` via `<Outlet context>`. `Home` distributes `data.slides`, `data.categories`, `data.packs`, `data.photoWall` as props to children.
 - Fonts: Cormorant Garamond, Jost, Rajdhani loaded from Google Fonts (`index.html`). Only `Rajdhani` used in CSS; others loaded but unused.
 
 ## Supabase Schema
@@ -28,8 +28,8 @@ Migration: `supabase/migrations/001_schema.sql`. Tables: `categories`, `slides`,
 - **Prettier** (`.prettierrc`): no semicolons, single quotes, trailing commas (`es5`), printWidth 100, tabWidth 2.
 - **ESLint** (`.eslintrc.json`): `react/prop-types` off, `no-unused-vars` as `warn` with `argsIgnorePattern: "^_"`.
 - **Styling**: CSS Modules in `src/styles/*.module.css` (flat, not co-located) + `src/styles/global.css`. Shared helpers: `.section-tag`, `.section-title`, `.section-desc`, `.reveal` (scroll-triggered animation classes).
-- **Images**: All photos in AVIF format. Run `node scripts/convertir.mjs` to convert originals from `raw/<category>/` → `src/assets/images/<category>/` (max 1200px, quality 80). Special: `raw/hero.*` → `src/assets/images/hero.avif` (1600px), `raw/about.*` → 800px, `raw/logo.*` → 800px.
-- **Image references in code**: Hero/logo use direct ES imports. Gallery/photo-wall images use `import.meta.glob` in `src/services/dataService.js` to resolve paths at build time. Never hardcode `src/assets/images/` string paths — they work in dev but break in production.
+- **Images**: All hosted on Supabase Storage (bucket `images`). Run `node scripts/upload-images.mjs` to upload from local `src/assets/images/` after running `003_storage.sql` in Supabase SQL Editor. Image conversion script: `node scripts/convertir.mjs` (reads from `raw/<category>/`, outputs AVIF to local dir for upload).
+- **Image URLs**: Constructed at runtime from Supabase Storage: `${STORAGE_URL}/slides/{id}.avif`, `${STORAGE_URL}/mosaico/{filename}`, `${STORAGE_URL}/hero.avif`, `${STORAGE_URL}/logo.avif`. No `import.meta.glob` — images are not bundled by Vite.
 
 ## Data Flow
 
@@ -51,7 +51,7 @@ App (useData → DataContext)
 ```
 
 - `src/services/supabaseClient.js` — initializes Supabase client (null if env vars missing).
-- `src/services/dataService.js` — `fetchAllData()` queries 5 tables in parallel; resolves image URLs via glob; falls back to `src/data/index.js` if any query fails.
+- `src/services/dataService.js` — `fetchAllData()` queries 5 tables in parallel; resolves image URLs via Supabase Storage; falls back to `src/data/index.js` if any query fails.
 - `src/hooks/useData.js` — calls `fetchAllData()` once, caches result in `sessionStorage`. Shows global spinner until loaded.
 - `src/data/index.js` — static data used as fallback when Supabase is unavailable.
 
@@ -66,7 +66,7 @@ App (useData → DataContext)
 - `src/App.jsx` has a dead import: `import Packs from './components/Packs'` — not referenced in JSX. Real usage is from `src/pages/Home.jsx`.
 - `src/components/Services.jsx` is orphaned (imported by no module) and broken — imports `SERVICES` from `../data` but `src/data/index.js` does not export it.
 - Admin routes: `/admin/login` (login form) and `/admin` (dashboard, protected by `ProtectedRoute`). Uses `supabase.auth.signInWithPassword()`. Create users manually in Supabase Auth dashboard.
-- Seed data: `supabase/seed.sql` — run this in Supabase SQL Editor after `001_schema.sql` to populate tables with current portfolio data. Images stay as local AVIF files (only metadata in DB).
+- Seed data: `supabase/seed.sql` — run this in Supabase SQL Editor after `001_schema.sql` to populate tables with current portfolio data. Images hosted on Supabase Storage bucket `images` (upload via `scripts/upload-images.mjs`).
 - Both `package-lock.json` and `pnpm-lock.yaml` exist; `npm install` is the verified install command.
 - `useScrollReveal` (`src/hooks/useScrollReveal.js`) uses a `MutationObserver` to observe new `.reveal` elements. It runs once on mount (`[]` deps) and auto-observes new elements — do NOT remove the MutationObserver.
 - The mobile hamburger menu makes the `<nav>` itself fullscreen (`height: 100vh; inset: 0`) when `menuOpen` is true. Do NOT use `position: fixed` on the `<ul>` child — that creates stacking context conflicts with the nav's `backdrop-filter`.

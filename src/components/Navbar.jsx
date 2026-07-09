@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavScroll } from '../hooks/useNavScroll'
-import logoSrc from '../assets/images/logo.avif'
+import { STORAGE_URL } from '../services/supabaseClient'
 import styles from '../styles/Navbar.module.css'
 
 const NAV_LINKS = [
@@ -50,7 +50,7 @@ export default function Navbar({ onContact }) {
       ref={menuRef}
     >
       <a href="#" className={styles.logo}>
-        <img src={logoSrc} alt="Raymi Fotografía" className={styles.logoMark} />
+        <img src={`${STORAGE_URL}/logo.avif`} alt="Raymi Fotografía" className={styles.logoMark} />
       </a>
 
       <button
