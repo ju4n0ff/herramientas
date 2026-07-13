@@ -1,15 +1,55 @@
 # AGENTS
 
-## Project Snapshot
+## Project
 
-- Single-package React 18 + Vite 5 app (no TypeScript, no tests). Entrypoints: `src/main.jsx` → `src/App.jsx`.
-- `react-router-dom` v7 with `BrowserRouter`. `MainLayout` wraps the home route via `<Outlet>` and owns shared state (`Navbar`, `Footer`, `Modal`, `WhatsAppButton`). `<Cursor />` and `<AccessibilityPanel />` sit outside `<Routes>` in `App.jsx`.
-- Data loads from Supabase on first visit. Falls back to static `src/data/index.js` if Supabase is unreachable or unconfigured. Images always served from Supabase Storage (bucket `images`). `App.jsx` fetches data once via `useData()` and provides it through `DataContext`. `MainLayout` passes `{ open, data }` via `<Outlet context>`. `Home` distributes `data.slides`, `data.categories`, `data.packs`, `data.photoWall` as props to children.
-- Fonts: Cormorant Garamond, Jost, Rajdhani loaded from Google Fonts (`index.html`). Only `Rajdhani` used in CSS; others loaded but unused.
+Single-package React 18 + Vite 5 app (no TypeScript, no tests). `src/main.jsx` → `src/App.jsx`. React Router v7 with `BrowserRouter`.
 
-## Supabase Schema
+## Routes
 
-Migration: `supabase/migrations/001_schema.sql`. Tables: `categories`, `slides`, `packs`, `pack_items`, `contact_info`, `photo_wall`. All have public SELECT policies. Insert/update restricted to authenticated users (future admin). The `categories` table includes a synthetic `all` row that the data service prepends client-side.
+| Path | Component | Guard |
+|---|---|---|
+| `/` | `MainLayout` → `Home` (via `<Outlet>`) | — |
+| `/admin/login` | `Login` | — |
+| `/registro`, `/admin/register` | `Register` | — |
+| `/dashboard` | `Dashboard` | `RequireAuth` |
+| `/perfil` | `EditarPerfil` | `RequireAuth` |
+| `/admin` | `Admin` | `RequireAdmin` |
+| `*` | `Error` (404) | — |
+
+`ProtectedRoute.jsx` exports `RequireAuth` (any logged-in user) and `RequireAdmin` (default export, checks `profiles.role = 'admin'`).
+
+## Auth
+
+- Supabase Auth with email/password. Users created via `/registro` or manually in Supabase Auth dashboard.
+- First registered user gets `role = 'admin'` (auto via migration 004 trigger). Subsequent users get `role = 'user'`. Admins can promote/demote from the `/admin` panel.
+- Login redirects to `/admin` if admin, `/dashboard` if user.
+- Password recovery via Supabase: login form has "Forgot password" link.
+
+## Data flow
+
+```
+App (inline fetchAllData + getStaticData → useState)
+ └── DataContext.Provider
+      └── Routes
+           ├── MainLayout (useDataContext → Outlet context={{ open, data }})
+           │    └── Home (useOutletContext → props to Gallery, PhotoWall, Packs, Contact)
+           ├── Login / Register / Dashboard / EditarPerfil / Admin
+           └── Error
+```
+
+`App.jsx` initializes with `getStaticData()` (static JS fallback), then `fetchAllData()` replaces it when Supabase responds. Data flows via `DataContext` (exported from `App.jsx` as `useDataContext`). The old `useData` hook (`src/hooks/useData.js`) still exists but is **not used** — `App.jsx` fetches inline.
+
+## Database (Supabase)
+
+Migrations apply in order: `001_schema.sql` → `002_admin.sql` → `003_storage.sql` → `004_messages_users.sql`.
+
+Public tables (SELECT for everyone): `categories`, `slides`, `packs`, `pack_items`, `contact_info`, `photo_wall`.
+
+Auth tables (RLS per 002 + 004): `profiles` (id, email, full_name, phone, role), `messages` (insert by anyone, read/update by admins only).
+
+Migration 004 adds `role` + `phone` columns to `profiles`, creates `messages` table, and supersedes the `handle_new_user` trigger from 002.
+
+Seed data: `supabase/seed.sql` — run in Supabase SQL Editor after migration 001.
 
 ## Commands
 
@@ -20,53 +60,43 @@ Migration: `supabase/migrations/001_schema.sql`. Tables: `categories`, `slides`,
 | `npm run preview` | Vite preview of built site |
 | `npm run lint` | ESLint on `src/`, **zero warnings** (`--max-warnings 0`) |
 | `npm run format` | Prettier writes in-place to `src/` |
+| `docker build -t raymi . && docker run -p 80:80 raymi` | Build & run production container (requires Docker) |
 
-**Note**: Ensure `eslint` (v8.x) and `prettier` are installed. Run `npm i -D eslint@8 prettier eslint-plugin-react eslint-plugin-react-hooks`.
+Run `npm i -D eslint@8 prettier eslint-plugin-react eslint-plugin-react-hooks` if linter is missing.
 
-## Code Conventions
+## Code conventions
 
-- **Prettier** (`.prettierrc`): no semicolons, single quotes, trailing commas (`es5`), printWidth 100, tabWidth 2.
+- **Prettier** (`.prettierrc`): no semicolons, single quotes, trailing commas `es5`, printWidth 100, tabWidth 2.
 - **ESLint** (`.eslintrc.json`): `react/prop-types` off, `no-unused-vars` as `warn` with `argsIgnorePattern: "^_"`.
-- **Styling**: CSS Modules in `src/styles/*.module.css` (flat, not co-located) + `src/styles/global.css`. Shared helpers: `.section-tag`, `.section-title`, `.section-desc`, `.reveal` (scroll-triggered animation classes).
-- **Images**: All hosted on Supabase Storage (bucket `images`). Run `node scripts/upload-images.mjs` to upload from local `src/assets/images/` after running `003_storage.sql` in Supabase SQL Editor. Image conversion script: `node scripts/convertir.mjs` (reads from `raw/<category>/`, outputs AVIF to local dir for upload).
-- **Image URLs**: Constructed at runtime from Supabase Storage: `${STORAGE_URL}/slides/{id}.avif`, `${STORAGE_URL}/mosaico/{filename}`, `${STORAGE_URL}/hero.avif`, `${STORAGE_URL}/logo.avif`. No `import.meta.glob` — images are not bundled by Vite.
+- **Styling**: CSS Modules in `src/styles/*.module.css` (flat, not co-located) + `src/styles/global.css`. Shared helpers: `.section-tag`, `.section-title`, `.section-desc`, `.reveal` (scroll animation).
+- **Images**: All hosted on Supabase Storage bucket `images`. URLs: `${STORAGE_URL}/slides/{id}.avif`, `${STORAGE_URL}/mosaico/{filename}`, `${STORAGE_URL}/hero.avif`, `${STORAGE_URL}/logo.avif`. No Vite bundling.
+- **Env** (copy `.env.example`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY`.
 
-## Data Flow
+## Contact form
 
-```
-App (useData → DataContext)
- └── BrowserRouter
-      └── AppContent (reads useData; shows LoadingSpinner while loading)
-           └── DataContext.Provider
-                └── Routes
-                     └── MainLayout (reads DataContext; passes data to Footer, Modal, WhatsApp)
-                          ├── Outlet context={{ open, data }}
-                          │    └── Home
-                          │         ├── Gallery     ← props: slides, categories
-                          │         ├── PhotoWall   ← props: photos
-                          │         └── Packs       ← props: packs
-                          └── Footer                ← props: contactInfo
-                          └── Modal                 ← props: categories, contactInfo
-                          └── WhatsAppButton        ← props: contactInfo
-```
+`Modal.jsx` submits to `contactService.enviarMensaje()`, which:
+1. Saves to Supabase `messages` table (required).
+2. Sends EmailJS notification (non-blocking — warns on failure but does not throw).
 
-- `src/services/supabaseClient.js` — initializes Supabase client (null if env vars missing).
-- `src/services/dataService.js` — `fetchAllData()` queries 5 tables in parallel; resolves image URLs via Supabase Storage; falls back to `src/data/index.js` if any query fails.
-- `src/hooks/useData.js` — calls `fetchAllData()` once, caches result in `sessionStorage`. Shows global spinner until loaded.
-- `src/data/index.js` — static data used as fallback when Supabase is unavailable.
+Template variables: `nombre`, `telefono`, `servicio`, `fecha`, `mensaje`.
 
-## Data & Environment
+## Scripts
 
-- `.env` (copy from `.env.example`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`, `VITE_EMAILJS_PUBLIC_KEY`.
-- EmailJS contact form in `src/services/contactService.js`. Template variables: `nombre`, `telefono`, `servicio`, `fecha`, `mensaje`.
-- `.gitignore` excludes `.env`, `raw/`, `dist/`, `.vite/`, `node_modules/`.
+| Script | Purpose |
+|---|---|
+| `scripts/upload-images.mjs` | Uploads `src/assets/images/{category}/*.avif` and `mosaico/*.avif`, plus `hero.avif` / `logo.avif`, to Supabase Storage bucket `images`. Reads `.env`. |
+| `scripts/upload-remaining.mjs` | Uploads specific `cumpleaños-*.avif` files with ñ→n sanitization. |
+| `scripts/check-supabase.mjs` | Verifies all 8 tables exist + storage folders populated + prints test URL. |
+| `scripts/verify-local.mjs` | Queries Supabase for row counts of the 5 public tables. |
+| `scripts/convertir.mjs` | Converts `raw/<category>/` images to AVIF. |
 
 ## Gotchas
 
-- `src/App.jsx` has a dead import: `import Packs from './components/Packs'` — not referenced in JSX. Real usage is from `src/pages/Home.jsx`.
 - `src/components/Services.jsx` is orphaned (imported by no module) and broken — imports `SERVICES` from `../data` but `src/data/index.js` does not export it.
-- Admin routes: `/admin/login` (login form) and `/admin` (dashboard, protected by `ProtectedRoute`). Uses `supabase.auth.signInWithPassword()`. Create users manually in Supabase Auth dashboard.
-- Seed data: `supabase/seed.sql` — run this in Supabase SQL Editor after `001_schema.sql` to populate tables with current portfolio data. Images hosted on Supabase Storage bucket `images` (upload via `scripts/upload-images.mjs`).
+- `src/hooks/useData.js` is unused — `App.jsx` fetches data inline. Do not reintroduce it without checking current flow.
+- Migration 002's `handle_new_user` trigger is superseded by migration 004's version (which adds role/phone). Run 004 after 002.
+- `useScrollReveal` uses `MutationObserver` to observe new `.reveal` elements — do NOT remove it.
+- Mobile hamburger: `<nav>` goes fullscreen (`height: 100vh; inset: 0`). Do NOT use `position: fixed` on the `<ul>` child — breaks stacking context with `backdrop-filter`.
 - Both `package-lock.json` and `pnpm-lock.yaml` exist; `npm install` is the verified install command.
-- `useScrollReveal` (`src/hooks/useScrollReveal.js`) uses a `MutationObserver` to observe new `.reveal` elements. It runs once on mount (`[]` deps) and auto-observes new elements — do NOT remove the MutationObserver.
-- The mobile hamburger menu makes the `<nav>` itself fullscreen (`height: 100vh; inset: 0`) when `menuOpen` is true. Do NOT use `position: fixed` on the `<ul>` child — that creates stacking context conflicts with the nav's `backdrop-filter`.
+- `@vercel/analytics` and `@vercel/speed-insights` render in `App.jsx` outside `<Routes>`.
+- No `opencode.json` config file found in repo root.

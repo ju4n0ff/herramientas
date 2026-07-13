@@ -1,0 +1,14 @@
+node_modules
+.git
+.gitignore
+.env
+.env.example
+raw
+dist
+.vite
+*.md
+AGENTS.md
+.DS_Store
+pnpm-lock.yaml
+scripts
+src/assets
