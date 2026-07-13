@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from '../styles/Modal.module.css'
+import { supabase } from '../services/supabaseClient'
 import { enviarMensaje } from '../services/contactService'
 
 const INITIAL_FORM = {
@@ -29,6 +30,37 @@ export default function Modal({ isOpen, onClose, preselect, categories, contactI
   const [submitError, setSubmitError] = useState('')
   const modalRef = useRef(null)
   const previousFocusRef = useRef(null)
+  const prefillDone = useRef(false)
+
+  useEffect(() => {
+    if (!isOpen) {
+      prefillDone.current = false
+      return
+    }
+    if (prefillDone.current) return
+    prefillDone.current = true
+
+    async function prefill() {
+      if (!supabase) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      if (!profile) return
+      setForm((prev) => ({
+        ...prev,
+        nombre: profile.full_name || prev.nombre,
+        telefono: profile.phone || prev.telefono,
+      }))
+    }
+
+    prefill()
+  }, [isOpen])
 
   const serviceTypes = categories ? categories.filter(c => c.key !== 'all') : []
   const whatsappNumber = contactInfo?.find(c => c.label === 'WhatsApp')?.value?.replace(/\s+/g, '') || '51952365703'
