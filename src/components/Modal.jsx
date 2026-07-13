@@ -122,7 +122,8 @@ export default function Modal({ isOpen, onClose, preselect, categories, contactI
         setSent(false)
         onClose()
       }, 2800)
-    } catch {
+    } catch (err) {
+      console.error('[Modal] Error al enviar mensaje:', err)
       setSubmitError('No se pudo enviar el mensaje. Inténtalo de nuevo.')
     } finally {
       setSubmitting(false)

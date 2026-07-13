@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { useNavScroll } from '../hooks/useNavScroll'
 import { supabase, STORAGE_URL } from '../services/supabaseClient'
 import styles from '../styles/Navbar.module.css'
@@ -106,32 +107,33 @@ export default function Navbar({ onContact }) {
         </li>
         <li className={styles.mobileOnly}>
           {session ? (
-            <a
-              href={profile?.role === 'admin' ? '/admin' : '/dashboard'}
+            <Link
+              to={profile?.role === 'admin' ? '/admin' : '/dashboard'}
               className={styles.mobileAuth}
+              onClick={closeMenu}
             >
               {profile?.role === 'admin' ? 'Panel admin' : 'Mi panel'}
-            </a>
+            </Link>
           ) : (
-            <a href="/admin/login" className={styles.mobileAuth}>
+            <Link to="/admin/login" className={styles.mobileAuth} onClick={closeMenu}>
               Iniciar sesión
-            </a>
+            </Link>
           )}
         </li>
       </ul>
 
       <div className={styles.desktopActions}>
         {session ? (
-          <a
-            href={profile?.role === 'admin' ? '/admin' : '/dashboard'}
+          <Link
+            to={profile?.role === 'admin' ? '/admin' : '/dashboard'}
             className={styles.authLink}
           >
             {profile?.role === 'admin' ? 'Admin' : 'Mi panel'}
-          </a>
+          </Link>
         ) : (
-          <a href="/admin/login" className={styles.authLink}>
+          <Link to="/admin/login" className={styles.authLink}>
             Iniciar sesión
-          </a>
+          </Link>
         )}
         <button className={styles.desktopCta} onClick={onContact}>
           Reservar sesión
