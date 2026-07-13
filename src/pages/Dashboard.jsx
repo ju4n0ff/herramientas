@@ -38,29 +38,29 @@ export default function Dashboard() {
 
       const userId = authData.user.id
 
-      const [profileResult, messagesResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id, email, full_name, phone, role')
-          .eq('id', userId)
-          .maybeSingle(),
-        supabase
-          .from('messages')
-          .select('id, nombre, telefono, servicio, fecha, mensaje, status, created_at')
-          .eq('telefono', authData.user.user_metadata?.phone || '')
-          .order('created_at', { ascending: false })
-          .limit(50),
-      ])
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, phone, role')
+        .eq('id', userId)
+        .maybeSingle()
 
       if (!mounted) return
 
-      if (profileResult.error) {
-        setError(profileResult.error.message)
+      if (profileError) {
+        setError(profileError.message)
       } else {
-        setProfile(profileResult.data)
+        setProfile(profile)
       }
 
-      setMessages(messagesResult.data || [])
+      const userPhone = profile?.phone || authData.user.user_metadata?.phone || ''
+      const { data: messages } = await supabase
+        .from('messages')
+        .select('id, nombre, telefono, servicio, fecha, mensaje, status, created_at')
+        .eq('telefono', userPhone)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      setMessages(messages || [])
       setUser(authData.user)
       setLoading(false)
     }
