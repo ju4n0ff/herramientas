@@ -12,7 +12,7 @@ export const guardarMensaje = async (formData) => {
     throw new Error('Supabase no está configurado.')
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('messages')
     .insert({
       nombre: formData.nombre.trim(),
@@ -21,11 +21,9 @@ export const guardarMensaje = async (formData) => {
       fecha: formData.fecha || null,
       mensaje: formData.mensaje.trim() || null,
     })
-    .select('id')
-    .single()
 
   if (error) throw error
-  return data
+  return true
 }
 
 export const enviarMensaje = async (formData) => {
