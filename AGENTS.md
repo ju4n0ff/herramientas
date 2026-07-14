@@ -80,6 +80,8 @@ Run `npm i -D eslint@8 prettier eslint-plugin-react eslint-plugin-react-hooks` i
 
 Template variables: `nombre`, `telefono`, `servicio`, `fecha`, `mensaje`.
 
+When the user is logged in, `Modal.jsx` auto-fills `nombre` and `telefono` from the user's Supabase `profiles` record on open.
+
 ## Scripts
 
 | Script | Purpose |
@@ -97,6 +99,6 @@ Template variables: `nombre`, `telefono`, `servicio`, `fecha`, `mensaje`.
 - Migration 002's `handle_new_user` trigger is superseded by migration 004's version (which adds role/phone). Run 004 after 002.
 - `useScrollReveal` uses `MutationObserver` to observe new `.reveal` elements — do NOT remove it.
 - Mobile hamburger: `<nav>` goes fullscreen (`height: 100vh; inset: 0`). Do NOT use `position: fixed` on the `<ul>` child — breaks stacking context with `backdrop-filter`.
-- Both `package-lock.json` and `pnpm-lock.yaml` exist; `npm install` is the verified install command.
+- `pnpm-lock.yaml` exists locally but is gitignored; `npm install` is the verified install command.
 - `@vercel/analytics` and `@vercel/speed-insights` render in `App.jsx` outside `<Routes>`.
 - No `opencode.json` config file found in repo root.
